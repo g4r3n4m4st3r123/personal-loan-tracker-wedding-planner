@@ -26,10 +26,6 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\DebtFreePlannerController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 
 /*
 |--------------------------------------------------------------------------
@@ -42,23 +38,54 @@ Route::get('/', function () {
 });
 
 
+/*
+|--------------------------------------------------------------------------
+| Dashboard
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
-    ->name('dashboard');    
+    ->name('dashboard');
+
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Loans
+    /*
+    |--------------------------------------------------------------------------
+    | Profile
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Loan Payments
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/payments', [LoanPaymentController::class, 'all'])
-    ->name('payments.index');
-    
+        ->name('payments.index');
+
     Route::resource('loans', LoanController::class);
+
     Route::get('/loans/{loan}/payments', [LoanPaymentController::class, 'index'])
-    ->name('loan-payments.index');
+        ->name('loan-payments.index');
 
     Route::get('/loans/{loan}/payments/create', [LoanPaymentController::class, 'create'])
         ->name('loan-payments.create');
@@ -69,9 +96,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/loan-payments/{payment}', [LoanPaymentController::class, 'destroy'])
         ->name('loan-payments.destroy');
 
-    // Salary
+
+    /*
+    |--------------------------------------------------------------------------
+    | Salary
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/salary', [SalaryController::class, 'index'])
-    ->name('salary.index');
+        ->name('salary.index');
 
     Route::post('/salary', [SalaryController::class, 'store'])
         ->name('salary.store');
@@ -80,16 +113,20 @@ Route::middleware('auth')->group(function () {
         ->name('salary.destroy');
 
     Route::post('/salary/period', [SalaryController::class, 'storePeriod'])
-    ->name('salary-periods.store');
+        ->name('salary-periods.store');
 
     Route::delete('/salary/period/{salaryPeriod}', [SalaryController::class, 'destroyPeriod'])
         ->name('salary-periods.destroy');
 
     Route::get('/salary/create', [SalaryController::class, 'create'])
-    ->name('salary.create');
+        ->name('salary.create');
 
- 
-    // Income
+
+    /*
+    |--------------------------------------------------------------------------
+    | Income
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/income', [IncomeController::class, 'index'])
         ->name('income.index');
@@ -104,9 +141,14 @@ Route::middleware('auth')->group(function () {
         ->name('income.destroy');
 
 
-    // Expenses
+    /*
+    |--------------------------------------------------------------------------
+    | Expenses
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/expenses', [ExpenseController::class, 'index'])
-    ->name('expenses.index');
+        ->name('expenses.index');
 
     Route::get('/expenses/create', [ExpenseController::class, 'create'])
         ->name('expenses.create');
@@ -118,7 +160,17 @@ Route::middleware('auth')->group(function () {
         ->name('expenses.destroy');
 
 
-    // Wedding Overview
+    /*
+    |--------------------------------------------------------------------------
+    | Wedding Overview
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | This route does NOT use the "wedding" middleware because a user
+    | who has no wedding needs to access this page to create one.
+    |
+    */
+
     Route::get('/wedding', [WeddingController::class, 'index'])
         ->name('wedding.index');
 
@@ -129,103 +181,213 @@ Route::middleware('auth')->group(function () {
         ->name('wedding.destroy');
 
 
-    // Wedding Checklist
+    /*
+    |--------------------------------------------------------------------------
+    | Wedding Modules
+    |--------------------------------------------------------------------------
+    |
+    | These routes require the authenticated user to have their own
+    | wedding before they can access the module.
+    |
+    */
 
-    Route::get('/wedding/checklist', [WeddingTaskController::class, 'index'])
-        ->name('wedding.checklist');
+    Route::middleware('wedding')->group(function () {
 
-    Route::post('/wedding/checklist', [WeddingTaskController::class, 'store'])
-        ->name('wedding.checklist.store');
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Checklist
+        |--------------------------------------------------------------------------
+        */
 
-    Route::patch('/wedding/checklist/{task}', [WeddingTaskController::class, 'update'])
-        ->name('wedding.checklist.update');
+        Route::get('/wedding/checklist', [WeddingTaskController::class, 'index'])
+            ->name('wedding.checklist');
 
-    Route::delete('/wedding/checklist/{task}', [WeddingTaskController::class, 'destroy'])
-        ->name('wedding.checklist.destroy');
+        Route::post('/wedding/checklist', [WeddingTaskController::class, 'store'])
+            ->name('wedding.checklist.store');
 
-    // Wedding Budget
+        Route::patch('/wedding/checklist/{task}', [WeddingTaskController::class, 'update'])
+            ->name('wedding.checklist.update');
 
-    Route::get('/wedding/budget', [WeddingBudgetController::class, 'index'])
-        ->name('wedding.budget');
-
-    Route::post('/wedding/budget', [WeddingBudgetController::class, 'store'])
-        ->name('wedding.budget.store');
-
-    Route::patch('/wedding/budget/{budget}', [WeddingBudgetController::class, 'update'])
-        ->name('wedding.budget.update');
-
-    Route::delete('/wedding/budget/{budget}', [WeddingBudgetController::class, 'destroy'])
-        ->name('wedding.budget.destroy');
-
-
-    // Wedding Expenses
-
-    Route::get('/wedding/expenses', [WeddingExpenseController::class, 'index'])
-        ->name('wedding.expenses');
-
-    Route::post('/wedding/expenses', [WeddingExpenseController::class, 'store'])
-        ->name('wedding.expenses.store');
-
-    Route::delete('/wedding/expenses/{expense}', [WeddingExpenseController::class, 'destroy'])
-        ->name('wedding.expenses.destroy');
-
-    Route::patch('/wedding/expenses/{expense}', [WeddingExpenseController::class, 'update'])
-    ->name('wedding.expenses.update');
-    
+        Route::delete('/wedding/checklist/{task}', [WeddingTaskController::class, 'destroy'])
+            ->name('wedding.checklist.destroy');
 
 
-    // Wedding Guests
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Budget
+        |--------------------------------------------------------------------------
+        */
 
-    Route::get('/wedding/guests', [WeddingGuestController::class, 'index'])
-        ->name('wedding.guests');
+        Route::get('/wedding/budget', [WeddingBudgetController::class, 'index'])
+            ->name('wedding.budget');
 
-    Route::post('/wedding/guests', [WeddingGuestController::class, 'store'])
-        ->name('wedding.guests.store');
+        Route::post('/wedding/budget', [WeddingBudgetController::class, 'store'])
+            ->name('wedding.budget.store');
 
-    Route::patch('/wedding/guests/{guest}', [WeddingGuestController::class, 'update'])
-        ->name('wedding.guests.update');
+        Route::patch('/wedding/budget/{budget}', [WeddingBudgetController::class, 'update'])
+            ->name('wedding.budget.update');
 
-    Route::delete('/wedding/guests/{guest}', [WeddingGuestController::class, 'destroy'])
-        ->name('wedding.guests.destroy');
-
-
-    // Wedding Vendors
-
-    Route::get('/wedding/vendors', [WeddingVendorController::class, 'index'])
-        ->name('wedding.vendors');
-
-    Route::post('/wedding/vendors', [WeddingVendorController::class, 'store'])
-        ->name('wedding.vendors.store');
-
-    Route::patch('/wedding/vendors/{vendor}', [WeddingVendorController::class, 'update'])
-        ->name('wedding.vendors.update');
-
-    Route::delete('/wedding/vendors/{vendor}', [WeddingVendorController::class, 'destroy'])
-        ->name('wedding.vendors.destroy');
+        Route::delete('/wedding/budget/{budget}', [WeddingBudgetController::class, 'destroy'])
+            ->name('wedding.budget.destroy');
 
 
-    // Wedding WeddingTimelineController
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Expenses
+        |--------------------------------------------------------------------------
+        */
 
-    Route::get('/wedding/timeline', [WeddingTimelineController::class, 'index'])
-        ->name('wedding.timeline');
+        Route::get('/wedding/expenses', [WeddingExpenseController::class, 'index'])
+            ->name('wedding.expenses');
 
-    Route::post('/wedding/timeline', [WeddingTimelineController::class, 'store'])
-        ->name('wedding.timeline.store');
+        Route::post('/wedding/expenses', [WeddingExpenseController::class, 'store'])
+            ->name('wedding.expenses.store');
 
-    Route::patch('/wedding/timeline/{timelineItem}', [WeddingTimelineController::class, 'update'])
-        ->name('wedding.timeline.update');
+        Route::patch('/wedding/expenses/{expense}', [WeddingExpenseController::class, 'update'])
+            ->name('wedding.expenses.update');
 
-    Route::delete('/wedding/timeline/{timelineItem}', [WeddingTimelineController::class, 'destroy'])
-        ->name('wedding.timeline.destroy');
-
-
-    // Wedding Calendar
-
-    Route::get('/wedding/calendar', [WeddingCalendarController::class, 'index'])
-        ->name('wedding.calendar');
+        Route::delete('/wedding/expenses/{expense}', [WeddingExpenseController::class, 'destroy'])
+            ->name('wedding.expenses.destroy');
 
 
-    // Reports
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Guests
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/guests', [WeddingGuestController::class, 'index'])
+            ->name('wedding.guests');
+
+        Route::post('/wedding/guests', [WeddingGuestController::class, 'store'])
+            ->name('wedding.guests.store');
+
+        Route::patch('/wedding/guests/{guest}', [WeddingGuestController::class, 'update'])
+            ->name('wedding.guests.update');
+
+        Route::delete('/wedding/guests/{guest}', [WeddingGuestController::class, 'destroy'])
+            ->name('wedding.guests.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Vendors
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/vendors', [WeddingVendorController::class, 'index'])
+            ->name('wedding.vendors');
+
+        Route::post('/wedding/vendors', [WeddingVendorController::class, 'store'])
+            ->name('wedding.vendors.store');
+
+        Route::patch('/wedding/vendors/{vendor}', [WeddingVendorController::class, 'update'])
+            ->name('wedding.vendors.update');
+
+        Route::delete('/wedding/vendors/{vendor}', [WeddingVendorController::class, 'destroy'])
+            ->name('wedding.vendors.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Timeline
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/timeline', [WeddingTimelineController::class, 'index'])
+            ->name('wedding.timeline');
+
+        Route::post('/wedding/timeline', [WeddingTimelineController::class, 'store'])
+            ->name('wedding.timeline.store');
+
+        Route::patch('/wedding/timeline/{timelineItem}', [WeddingTimelineController::class, 'update'])
+            ->name('wedding.timeline.update');
+
+        Route::delete('/wedding/timeline/{timelineItem}', [WeddingTimelineController::class, 'destroy'])
+            ->name('wedding.timeline.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Calendar
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/calendar', [WeddingCalendarController::class, 'index'])
+            ->name('wedding.calendar');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Seating
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/seating', [WeddingSeatingController::class, 'index'])
+            ->name('wedding.seating');
+
+        Route::post('/wedding/seating/tables', [WeddingSeatingController::class, 'storeTable'])
+            ->name('wedding.seating.tables.store');
+
+        Route::patch('/wedding/seating/tables/{table}', [WeddingSeatingController::class, 'updateTable'])
+            ->name('wedding.seating.tables.update');
+
+        Route::delete('/wedding/seating/tables/{table}', [WeddingSeatingController::class, 'destroyTable'])
+            ->name('wedding.seating.tables.destroy');
+
+        Route::post('/wedding/seating/assign', [WeddingSeatingController::class, 'assignGuest'])
+            ->name('wedding.seating.assign');
+
+        Route::delete('/wedding/seating/{seating}', [WeddingSeatingController::class, 'removeGuest'])
+            ->name('wedding.seating.remove');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Documents
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/documents', [WeddingDocumentController::class, 'index'])
+            ->name('wedding.documents');
+
+        Route::post('/wedding/documents', [WeddingDocumentController::class, 'store'])
+            ->name('wedding.documents.store');
+
+        Route::get('/wedding/documents/{document}/download', [WeddingDocumentController::class, 'download'])
+            ->name('wedding.documents.download');
+
+        Route::delete('/wedding/documents/{document}', [WeddingDocumentController::class, 'destroy'])
+            ->name('wedding.documents.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Day-of
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/day-of', [WeddingDayOfController::class, 'index'])
+            ->name('wedding.day-of');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Wedding Printables
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/wedding/printables/{type?}', [WeddingPrintableController::class, 'index'])
+            ->name('wedding.printables');
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reports
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/reports', [ReportController::class, 'index'])
         ->name('reports.index');
@@ -236,12 +398,22 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/wedding', [ReportController::class, 'wedding'])
         ->name('reports.wedding');
 
-    // Application Settings
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Settings
+    |--------------------------------------------------------------------------
+    */
 
     Route::patch('/settings/preferences', [UserSettingController::class, 'update'])
         ->name('settings.preferences.update');
 
-    // Notifications
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
@@ -253,69 +425,37 @@ Route::middleware('auth')->group(function () {
         ->name('notifications.read-all');
 
 
-    // Wedding Seating Arrangement
-
-    Route::get('/wedding/seating', [WeddingSeatingController::class, 'index'])
-        ->name('wedding.seating');
-
-    Route::post('/wedding/seating/tables', [WeddingSeatingController::class, 'storeTable'])
-        ->name('wedding.seating.tables.store');
-
-    Route::patch('/wedding/seating/tables/{table}', [WeddingSeatingController::class, 'updateTable'])
-        ->name('wedding.seating.tables.update');
-
-    Route::delete('/wedding/seating/tables/{table}', [WeddingSeatingController::class, 'destroyTable'])
-        ->name('wedding.seating.tables.destroy');
-
-    Route::post('/wedding/seating/assign', [WeddingSeatingController::class, 'assignGuest'])
-        ->name('wedding.seating.assign');
-
-    Route::delete('/wedding/seating/{seating}', [WeddingSeatingController::class, 'removeGuest'])
-        ->name('wedding.seating.remove');
-
-
-    // Wedding Documents & Photos
-
-    Route::get('/wedding/documents', [WeddingDocumentController::class, 'index'])
-        ->name('wedding.documents');
-
-    Route::post('/wedding/documents', [WeddingDocumentController::class, 'store'])
-        ->name('wedding.documents.store');
-
-    Route::get('/wedding/documents/{document}/download', [WeddingDocumentController::class, 'download'])
-        ->name('wedding.documents.download');
-
-    Route::delete('/wedding/documents/{document}', [WeddingDocumentController::class, 'destroy'])
-        ->name('wedding.documents.destroy');
-
-
-    // Wedding Day-of Mode
-
-    Route::get('/wedding/day-of', [WeddingDayOfController::class, 'index'])
-        ->name('wedding.day-of');
-
-
-    // Wedding Reports & Printables
-
-    Route::get('/wedding/printables/{type?}', [WeddingPrintableController::class, 'index'])
-        ->name('wedding.printables');
-
-    // Search
+    /*
+    |--------------------------------------------------------------------------
+    | Search
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/search', [SearchController::class, 'index'])
-    ->name('search.index');
+        ->name('search.index');
 
     Route::get('/search/live', [SearchController::class, 'live'])
-    ->name('search.live');
+        ->name('search.live');
 
-    // Debt Free
+
+    /*
+    |--------------------------------------------------------------------------
+    | Debt-Free Planner
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('/debt-free-planner', [
         DebtFreePlannerController::class,
         'index',
     ])->name('debt-free.index');
 
+});
 
-        });
+
+/*
+|--------------------------------------------------------------------------
+| Authentication Routes
+|--------------------------------------------------------------------------
+*/
 
 require __DIR__.'/auth.php';
