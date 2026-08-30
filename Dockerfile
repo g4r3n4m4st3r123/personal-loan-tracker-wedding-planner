@@ -1,6 +1,8 @@
 FROM php:8.5-fpm-bookworm
 
-# System dependencies
+WORKDIR /var/www/html
+
+# System packages
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -10,11 +12,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libzip-dev \
     libicu-dev \
-    libonig-dev \
     nodejs \
     npm \
     && docker-php-ext-install \
-        pdo \
         pdo_pgsql \
         mbstring \
         bcmath \
@@ -24,55 +24,48 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
-
-# Copy application
+# Copy project
 COPY . .
 
-# Install PHP dependencies
+# PHP dependencies
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --prefer-dist
 
-# Install frontend dependencies and build assets
+# Frontend dependencies
 RUN npm ci \
     && npm run build \
     && rm -rf node_modules
 
-# Laravel writable directories
+# Laravel writable folders
 RUN mkdir -p \
     storage/framework/cache \
     storage/framework/sessions \
     storage/framework/views \
     storage/logs \
-    bootstrap/cache
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
-RUN chown -R www-data:www-data \
-    storage \
-    bootstrap/cache
-
-RUN chmod -R 775 \
-    storage \
-    bootstrap/cache
-
-# Nginx configuration
+# Nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-# PHP-FPM configuration
+# PHP-FPM
 COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
 
-# Supervisor configuration
+# Supervisor
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-EXPOSE 10000
-
+# Startup script
 COPY docker/start.sh /usr/local/bin/start.sh
 
 RUN chmod +x /usr/local/bin/start.sh
+
+EXPOSE 10000
 
 CMD ["/usr/local/bin/start.sh"]
