@@ -2,19 +2,21 @@ FROM php:8.4-fpm-bookworm
 
 WORKDIR /var/www/html
 
-# Install system dependencies only
-RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
-    git \
-    unzip \
-    curl \
-    libpq-dev \
-    libzip-dev \
-    libicu-dev \
-    nodejs \
-    npm \
-    && docker-php-ext-install \
+# System packages
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        nginx \
+        supervisor \
+        git \
+        unzip \
+        curl \
+        libpq-dev \
+        libzip-dev \
+        libicu-dev \
+        libonig-dev \
+        nodejs \
+        npm \
+    && docker-php-ext-install -j"$(nproc)" \
         pdo_pgsql \
         mbstring \
         bcmath \
@@ -23,44 +25,38 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Copy Laravel application
 COPY . .
 
-# Install PHP dependencies
+# PHP dependencies
 RUN composer install \
     --no-dev \
-    --optimize-autoloader \
     --no-interaction \
-    --prefer-dist
+    --prefer-dist \
+    --optimize-autoloader
 
-# Install and build frontend assets
+# Frontend
 RUN npm ci \
     && npm run build \
     && rm -rf node_modules
 
-# Laravel writable directories
+# Laravel permissions
 RUN mkdir -p \
-    storage/framework/cache \
-    storage/framework/sessions \
-    storage/framework/views \
-    storage/logs \
-    bootstrap/cache \
+        storage/framework/cache \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Nginx
+# Configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
-
-# PHP-FPM
 COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
-
-# Supervisor
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Startup script
 COPY docker/start.sh /usr/local/bin/start.sh
 
 RUN chmod +x /usr/local/bin/start.sh

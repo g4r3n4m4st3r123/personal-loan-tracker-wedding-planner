@@ -2,13 +2,13 @@
 
 set -e
 
-echo "Starting Laravel application..."
+echo "Preparing Laravel..."
 
 php artisan config:clear
-php artisan cache:clear
+php artisan route:clear
 php artisan view:clear
 
-echo "Running database migrations..."
+echo "Running migrations..."
 
 php artisan migrate --force
 
@@ -16,6 +16,7 @@ echo "Creating storage link..."
 
 php artisan storage:link || true
 
-echo "Starting services..."
+echo "Starting PHP-FPM and NGINX..."
 
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+exec /usr/bin/supervisord \
+    -c /etc/supervisor/conf.d/supervisord.conf
