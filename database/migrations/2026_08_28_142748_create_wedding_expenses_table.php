@@ -1,0 +1,64 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('wedding_expenses', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('wedding_id')
+                ->constrained('weddings')
+                ->cascadeOnDelete();
+
+            $table->foreignId('wedding_budget_id')
+                ->nullable()
+                ->constrained('wedding_budgets')
+                ->nullOnDelete();
+
+            $table->string('expense_name');
+
+            $table->decimal('amount', 12, 2);
+
+            $table->date('expense_date');
+
+            $table->string('payment_status')
+                ->default('paid');
+
+            $table->string('payment_method')
+                ->nullable();
+
+            $table->text('notes')
+                ->nullable();
+
+            $table->timestamps();
+
+            $table->index([
+                'wedding_id',
+                'expense_date',
+            ]);
+
+            $table->index([
+                'wedding_id',
+                'wedding_budget_id',
+            ]);
+
+            $table->index('payment_status');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('wedding_expenses');
+    }
+};
