@@ -31,19 +31,19 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Copy Laravel application
 COPY . .
 
-# PHP dependencies
+# Install PHP dependencies
 RUN composer install \
     --no-dev \
     --no-interaction \
     --prefer-dist \
     --optimize-autoloader
 
-# Frontend
+# Install and build frontend assets
 RUN npm ci \
     && npm run build \
     && rm -rf node_modules
 
-# Laravel permissions
+# Laravel writable directories
 RUN mkdir -p \
         storage/framework/cache \
         storage/framework/sessions \
@@ -53,10 +53,16 @@ RUN mkdir -p \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Configuration
+# Nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+# PHP-FPM
 COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+
+# Supervisor
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Laravel startup script
 COPY docker/start.sh /usr/local/bin/start.sh
 
 RUN chmod +x /usr/local/bin/start.sh
