@@ -1,8 +1,8 @@
-FROM php:8.5-fpm-bookworm
+FROM php:8.4-fpm-bookworm
 
 WORKDIR /var/www/html
 
-# System packages
+# Install system dependencies only
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
@@ -20,29 +20,28 @@ RUN apt-get update && apt-get install -y \
         bcmath \
         intl \
         zip \
-        opcache \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Composer
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy project
+# Copy Laravel application
 COPY . .
 
-# PHP dependencies
+# Install PHP dependencies
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --prefer-dist
 
-# Frontend dependencies
+# Install and build frontend assets
 RUN npm ci \
     && npm run build \
     && rm -rf node_modules
 
-# Laravel writable folders
+# Laravel writable directories
 RUN mkdir -p \
     storage/framework/cache \
     storage/framework/sessions \
