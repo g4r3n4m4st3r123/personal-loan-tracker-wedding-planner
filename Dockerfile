@@ -71,4 +71,8 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 10000
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+COPY docker/start.sh /usr/local/bin/start.sh
+
+RUN chmod +x /usr/local/bin/start.sh
+
+CMD ["/usr/local/bin/start.sh"]
